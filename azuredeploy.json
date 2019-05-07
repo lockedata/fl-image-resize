@@ -7,6 +7,19 @@
             "metadata": {
                 "description": "The name of the function app that you wish to create."
             }
+        },
+        "createNewStorage": {
+            "type": "string",
+            "metadata": {
+                "description": "Deploy new storage account or use existing one"
+            },
+            "allowedValues": ["yes", "no"]
+        },
+        "storageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account name"
+            }
         }
     },
     "variables": {
@@ -16,12 +29,13 @@
         "repoURL": "https://github.com/jefking/fl-image-resize.git",
         "branch": "master",
         "storageAccountName": "[concat('storage', uniquestring(resourceGroup().id))]",
-        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
     },
     "resources": [
         {
+            "condition": "[equals(parameters('createNewStorage'),'yes')]",
             "type": "Microsoft.Storage/storageAccounts",
-            "name": "[variables('storageAccountName')]",
+            "name": "[parameters('storageAccountName')]",
             "apiVersion": "2018-07-01",
             "kind": "StorageV2",
             "location": "[resourceGroup().location]",
@@ -38,7 +52,7 @@
                     "name": "default/thumbnails",
                     "apiVersion": "2018-07-01",
                     "dependsOn": [
-                        "[variables('storageAccountName')]"
+                        "[parameters('storageAccountName')]"
                     ]
                 },
                 {
@@ -46,7 +60,7 @@
                     "name": "default/images",
                     "apiVersion": "2018-07-01",
                     "dependsOn": [
-                        "[variables('storageAccountName')]"
+                        "[parameters('storageAccountName')]"
                     ]
                 }
             ]
@@ -78,15 +92,15 @@
                     "appSettings": [
                         {
                             "name": "AzureWebJobsDashboard",
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
                         },
                         {
                             "name": "AzureWebJobsStorage",
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
                         },
                         {
                             "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
                         },
                         {
                             "name": "WEBSITE_CONTENTSHARE",
@@ -106,7 +120,7 @@
                         },
                         {
                             "name":"ImageRepository",
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
                         },
                         {
                           "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
@@ -117,7 +131,7 @@
             },
             "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
                 "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
             ],
             "resources": [
